@@ -1,41 +1,36 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Transacao {
   final String id;
-  final String tipo; // 'receita' ou 'despesa'
+  final String tipo;
   final double valor;
-  final String categoria;
+  final String origem;
   final DateTime data;
-  final String observacao;
 
   Transacao({
     required this.id,
     required this.tipo,
     required this.valor,
-    required this.categoria,
+    required this.origem,
     required this.data,
-    required this.observacao,
   });
 
-  // Converte para Map para salvar no Firestore
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'tipo': tipo,
-      'valor': valor,
-      'categoria': categoria,
-      'data': data.toIso8601String(),
-      'observacao': observacao,
-    };
+  factory Transacao.fromFirestore(Map<String, dynamic> doc, String id) {
+    return Transacao(
+      id: id,
+      tipo: doc['tipo'] ?? '',
+      valor: (doc['valor'] as num).toDouble(),
+      origem: doc['origem'] ?? 'Sem origem',
+      data: (doc['data'] as Timestamp).toDate(), // ✅ conversão correta
+    );
   }
 
-  // Construtor a partir de Map (Firestore)
-  factory Transacao.fromMap(Map<String, dynamic> map) {
-    return Transacao(
-      id: map['id'] ?? '',
-      tipo: map['tipo'] ?? '',
-      valor: map['valor']?.toDouble() ?? 0.0,
-      categoria: map['categoria'] ?? '',
-      data: DateTime.parse(map['data']),
-      observacao: map['observacao'] ?? '',
-    );
+  Map<String, dynamic> toFirestore() {
+    return {
+      'tipo': tipo,
+      'valor': valor,
+      'origem': origem,
+      'data': Timestamp.fromDate(data), // ✅ salva como Timestamp
+    };
   }
 }
