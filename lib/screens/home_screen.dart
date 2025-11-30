@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../services/firestore_service.dart';
+import '../widgets/export_util.dart';
 
 class ResumoFinanceiro extends StatelessWidget {
   final double totalReceitas;
@@ -85,8 +86,33 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Controle de Gastos"),
+        title: FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .get(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const Text("Controle de Gastos");
+            }
+            final dados = snapshot.data!.data() as Map<String, dynamic>?;
+            final nome = dados?['nome'] ?? '';
+            return Text("Controle de Gastos - $nome");
+          },
+        ),
+
+
+
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () async {
+              final transacoes = await FirestoreService().getTransacoesFiltradas(uid: user.uid);
+              await ExportUtils().exportarPDF(transacoes);
+            },
+
+          ),
+
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -135,7 +161,7 @@ class HomeScreen extends StatelessWidget {
             totalDespesas: totalDespesas,
              ),// gráfico de pizza
               SizedBox(
-                height: 200,
+                height: 140,
                 child: PieChart(
                   PieChartData(
                     sections: [
@@ -164,6 +190,8 @@ class HomeScreen extends StatelessWidget {
                     final valor = doc['valor'];
                     final categoria = doc['categoria'];
                     final data = (doc['data'] as Timestamp).toDate();
+                    final reais = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+
 
                     return ListTile(
                       leading: Icon(
@@ -172,8 +200,10 @@ class HomeScreen extends StatelessWidget {
                             : Icons.add_circle,
                         color: tipo == 'despesa' ? Colors.red : Colors.green,
                       ),
-                      title: Text("R\$ $valor"),
-                      subtitle: Text("${tipo.toUpperCase()} - ${doc['origem']} - ${doc['categoria']} - ${data.toLocal()}"),
+                      title: Text(reais.format((doc['valor'] as num).toDouble())),
+                      subtitle: Text(
+                        "${tipo.toUpperCase()} - ${doc['origem']} - ${doc['categoria']} - ${DateFormat('dd/MM/yy').format(data)}",
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.grey),
                         onPressed: () async {

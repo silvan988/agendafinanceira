@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Controle de Gastos',
       theme: ThemeData(primarySwatch: Colors.green),
       // aqui usamos o StreamBuilder para decidir qual tela mostrar

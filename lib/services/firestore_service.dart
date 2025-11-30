@@ -12,30 +12,19 @@ class FirestoreService {
 
   // Salvar nova transação
   Future<void> adicionarTransacao(Transacao transacao) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw Exception("Usuário não autenticado");
-    }
-
-    await _db
-        .collection('usuarios')
-        .doc(user.uid)
-        .collection('transacoes')
-        .add(transacao.toMap());
+    await transacoesRef.doc(transacao.id).set(transacao.toMap());
   }
 
-  Future<void> updateTransacao(String id, Transacao transacao) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    await _db
-        .collection('usuarios')
-        .doc(user.uid)
-        .collection('transacoes')
-        .doc(id)
-        .update(transacao.toMap());
+  // Buscar todas as transações de um usuário
+  Stream<List<Transacao>> listarTransacoes(String userId) {
+    return transacoesRef
+        .where('id', isEqualTo: userId)
+        .orderBy('data', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => Transacao.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .toList());
   }
-
 
   // Excluir transação
   Future<void> deleteTransacao(String id) async {

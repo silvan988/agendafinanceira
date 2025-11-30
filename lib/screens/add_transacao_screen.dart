@@ -14,7 +14,7 @@ class _AddTransacaoScreenState extends State<AddTransacaoScreen> {
   final _origemController = TextEditingController();
   final _categoriaController = TextEditingController();
   String _tipo = "despesa";
-  DateTime _data = DateTime.now();
+  final DateTime _data = DateTime.now();
 
   Future<void> _salvarTransacao() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -49,42 +49,49 @@ class _AddTransacaoScreenState extends State<AddTransacaoScreen> {
       appBar: AppBar(title: const Text("Adicionar Transação")),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _valorController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Valor (R\$)"),
-            ),
-            const SizedBox(height: 13),
-            TextField(
-              controller: _origemController,
-              decoration: const InputDecoration(labelText: "Origem (ex: Mercado, Uber, Salário)"),
-            ),
-            const SizedBox(height: 13),
-            TextField(
-              controller: _categoriaController,
-              decoration: const InputDecoration(labelText: "Categoria (ex: Alimentação, Transporte, Lazer)"),
-            ),
-            const SizedBox(height: 13),
-            DropdownButton<String>(
-              value: _tipo,
-              items: const [
-                DropdownMenuItem(value: "despesa", child: Text("Despesa")),
-                DropdownMenuItem(value: "receita", child: Text("Receita")),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _tipo = value!;
-                });
-              },
-            ),
-            const SizedBox(height: 14),
-            ElevatedButton(
-              onPressed: _salvarTransacao,
-              child: const Text("Salvar"),
-            ),
-          ],
+        child: SingleChildScrollView( // <-- adiciona rolagem
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _valorController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Valor (R\$)"),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _origemController,
+                decoration: const InputDecoration(
+                  labelText: "Origem (ex: Mercado, Uber, Salário)",
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _categoriaController,
+                decoration: const InputDecoration(
+                  labelText: "Categoria (ex: Alimentação, Transporte, Lazer)",
+                ),
+              ),
+              const SizedBox(height: 10),
+              DropdownButton<String>(
+                value: _tipo,
+                items: const [
+                  DropdownMenuItem(value: "despesa", child: Text("Despesa")),
+                  DropdownMenuItem(value: "receita", child: Text("Receita")),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _tipo = value!;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _salvarTransacao,
+                child: const Text("Salvar"),
+              ),
+            ],
+          ),
         ),
       ),
     );

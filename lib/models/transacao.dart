@@ -17,17 +17,20 @@ class Transacao {
     required this.data,
   });
 
-  // Firestore → objeto
-  factory Transacao.fromMap(Map<String, dynamic> map, String id) {
+  // Construtor a partir do Firestore
+  factory Transacao.fromFirestore(DocumentSnapshot doc) {
+    final dados = doc.data() as Map<String, dynamic>;
+
     return Transacao(
-      id: id,
-      tipo: map['tipo'] ?? '',
-      valor: (map['valor'] as num).toDouble(),
-      origem: map['origem'] ?? 'Sem origem',
-      categoria: map['categoria'] ?? 'Sem categoria',
-      data: (map['data'] as Timestamp).toDate(),
+      id: doc.id,
+      tipo: dados['tipo'] ?? '',
+      origem: dados['origem'] ?? '',
+      categoria: dados['categoria'] ?? '',
+      valor: (dados['valor'] as num).toDouble(),
+      data: (dados['data'] as Timestamp).toDate(),
     );
   }
+
 
   // objeto → Firestore
   Map<String, dynamic> toMap() {
