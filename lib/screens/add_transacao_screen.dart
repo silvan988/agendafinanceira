@@ -12,6 +12,7 @@ class AddTransacaoScreen extends StatefulWidget {
 class _AddTransacaoScreenState extends State<AddTransacaoScreen> {
   final _valorController = TextEditingController();
   final _origemController = TextEditingController();
+  final _categoriaController = TextEditingController();
   String _tipo = "despesa";
   DateTime _data = DateTime.now();
 
@@ -32,10 +33,11 @@ class _AddTransacaoScreenState extends State<AddTransacaoScreen> {
         .doc(user.uid)
         .collection('transacoes')
         .add({
-      'tipo': _tipo,
-      'valor': valor,
-      'origem': _origemController.text,
-      'data': Timestamp.fromDate(_data), // ✅ salva como Timestamp
+          'tipo': _tipo,
+          'valor': valor,
+          'categoria': _categoriaController.text, // ✅ salva como String'
+          'origem': _origemController.text,
+          'data': Timestamp.fromDate(_data), // ✅ salva como Timestamp
     });
 
     Navigator.pop(context);
@@ -54,12 +56,17 @@ class _AddTransacaoScreenState extends State<AddTransacaoScreen> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Valor (R\$)"),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 13),
             TextField(
               controller: _origemController,
               decoration: const InputDecoration(labelText: "Origem (ex: Mercado, Uber, Salário)"),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 13),
+            TextField(
+              controller: _categoriaController,
+              decoration: const InputDecoration(labelText: "Categoria (ex: Alimentação, Transporte, Lazer)"),
+            ),
+            const SizedBox(height: 13),
             DropdownButton<String>(
               value: _tipo,
               items: const [
@@ -72,7 +79,7 @@ class _AddTransacaoScreenState extends State<AddTransacaoScreen> {
                 });
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             ElevatedButton(
               onPressed: _salvarTransacao,
               child: const Text("Salvar"),

@@ -2,9 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Transacao {
   final String id;
-  final String tipo;
+  final String tipo;       // despesa ou receita
   final double valor;
-  final String origem;
+  final String origem;     // supermercado, uber, salário...
+  final String categoria;  // alimentação, transporte, lazer...
   final DateTime data;
 
   Transacao({
@@ -12,25 +13,30 @@ class Transacao {
     required this.tipo,
     required this.valor,
     required this.origem,
+    required this.categoria,
     required this.data,
   });
 
-  factory Transacao.fromFirestore(Map<String, dynamic> doc, String id) {
+  // Firestore → objeto
+  factory Transacao.fromMap(Map<String, dynamic> map, String id) {
     return Transacao(
       id: id,
-      tipo: doc['tipo'] ?? '',
-      valor: (doc['valor'] as num).toDouble(),
-      origem: doc['origem'] ?? 'Sem origem',
-      data: (doc['data'] as Timestamp).toDate(), // ✅ conversão correta
+      tipo: map['tipo'] ?? '',
+      valor: (map['valor'] as num).toDouble(),
+      origem: map['origem'] ?? 'Sem origem',
+      categoria: map['categoria'] ?? 'Sem categoria',
+      data: (map['data'] as Timestamp).toDate(),
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  // objeto → Firestore
+  Map<String, dynamic> toMap() {
     return {
       'tipo': tipo,
       'valor': valor,
       'origem': origem,
-      'data': Timestamp.fromDate(data), // ✅ salva como Timestamp
+      'categoria': categoria,
+      'data': Timestamp.fromDate(data),
     };
   }
 }

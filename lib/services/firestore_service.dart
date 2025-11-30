@@ -1,7 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/transacao.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+
   final CollectionReference transacoesRef =
   FirebaseFirestore.instance.collection('transacoes');
 
@@ -17,12 +22,20 @@ class FirestoreService {
         .orderBy('data', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
-        .map((doc) => Transacao.fromMap(doc.data() as Map<String, dynamic>))
+        .map((doc) => Transacao.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList());
   }
 
   // Excluir transação
-  Future<void> excluirTransacao(String transacaoId) async {
-    await transacoesRef.doc(transacaoId).delete();
+  Future<void> deleteTransacao(String id) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _db
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('transacoes')
+        .doc(id)
+        .delete();
   }
 }

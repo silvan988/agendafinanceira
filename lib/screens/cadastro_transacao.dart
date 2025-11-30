@@ -16,7 +16,7 @@ class _CadastroTransacaoState extends State<CadastroTransacao> {
   final _formKey = GlobalKey<FormState>();
   final _valorController = TextEditingController();
   final _categoriaController = TextEditingController();
-  final _observacaoController = TextEditingController();
+  final _origemController = TextEditingController();
   DateTime _dataSelecionada = DateTime.now();
   String _tipoSelecionado = 'despesa';
 
@@ -28,7 +28,7 @@ class _CadastroTransacaoState extends State<CadastroTransacao> {
         valor: double.parse(_valorController.text),
         categoria: _categoriaController.text,
         data: _dataSelecionada,
-        observacao: _observacaoController.text,
+        origem: _origemController.text,
       );
 
       FirestoreService().adicionarTransacao(transacao).then((_) {
@@ -70,8 +70,8 @@ class _CadastroTransacaoState extends State<CadastroTransacao> {
                 value!.isEmpty ? 'Informe a categoria' : null,
               ),
               TextFormField(
-                controller: _observacaoController,
-                decoration: const InputDecoration(labelText: 'Observação'),
+                controller: _origemController,
+                decoration: const InputDecoration(labelText: 'Origem'),
               ),
               const SizedBox(height: 16),
               Text('Data: ${_dataSelecionada.toLocal().toString().split(' ')[0]}'),
