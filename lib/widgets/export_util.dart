@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -6,7 +5,6 @@ import 'package:printing/printing.dart';
 import 'package:agendafinanceira/models/transacao.dart'; // seu modelo de transação
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 
 class ExportUtils {
   Future<void> exportarPDF(List<Transacao> transacoes) async {
@@ -21,7 +19,7 @@ class ExportUtils {
         .doc(uid)
         .get();
 
-    final dadosUsuario = docUsuario.data() as Map<String, dynamic>?;
+    final dadosUsuario = docUsuario.data();
     final nomeUsuario = dadosUsuario?['nome'] ?? 'Usuário';
 
     // 🔹 Data atual formatada

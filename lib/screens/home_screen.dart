@@ -1,75 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../services/firestore_service.dart';
+import '../models/transacao.dart';
 import '../widgets/export_util.dart';
-
-class ResumoFinanceiro extends StatelessWidget {
-  final double totalReceitas;
-  final double totalDespesas;
-
-  const ResumoFinanceiro({
-    super.key,
-    required this.totalReceitas,
-    required this.totalDespesas,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final saldo = totalReceitas - totalDespesas;
-
-    final formatador = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              "Resumo Financeiro",
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Receitas:", style: const TextStyle(color: Colors.green)),
-                Text(formatador.format(totalReceitas),
-                    style: const TextStyle(color: Colors.green)),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Despesas:", style: const TextStyle(color: Colors.red)),
-                Text(formatador.format(totalDespesas),
-                    style: const TextStyle(color: Colors.red)),
-              ],
-            ),
-            const Divider(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Saldo:", style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(
-                  formatador.format(saldo),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: saldo >= 0 ? Colors.green : Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+import '../widgets/resumo_financeiro.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -86,33 +22,20 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance
-              .collection('usuarios')
-              .doc(FirebaseAuth.instance.currentUser!.uid)
-              .get(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData || !snapshot.data!.exists) {
-              return const Text("Controle de Gastos");
-            }
-            final dados = snapshot.data!.data() as Map<String, dynamic>?;
-            final nome = dados?['nome'] ?? '';
-            return Text("Controle de Gastos - $nome");
-          },
-        ),
-
-
-
+        title: const Text("Controle de Gastos"),
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: () async {
-              final transacoes = await FirestoreService().getTransacoesFiltradas(uid: user.uid);
+              // 🔹 Pega a lista atual do Stream via FirestoreService
+              final transacoes = await FirestoreService()
+                  .listarTransacoes(user.uid)
+                  .first;
+
+              // 🔹 Gera o PDF com a lista correta
               await ExportUtils().exportarPDF(transacoes);
             },
-
           ),
-
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -122,44 +45,38 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(user.uid)
-            .collection('transacoes')
-            .snapshots(),
+      body: StreamBuilder<List<Transacao>>(
+        stream: FirestoreService().listarTransacoes(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text("Nenhuma transação cadastrada"));
           }
 
-          final transacoes = snapshot.data!.docs;
+          final transacoes = snapshot.data!;
 
           // calcular totais
           double totalReceitas = 0;
           double totalDespesas = 0;
 
-          for (var doc in transacoes) {
-            final tipo = doc['tipo'];
-            final valor = (doc['valor'] as num).toDouble();
-            final categoria = doc['categoria'];
-
-            if (tipo == 'receita') {
-              totalReceitas += valor;
+          for (var t in transacoes) {
+            if (t.tipo.toLowerCase() == 'receita') {
+              totalReceitas += t.valor;
             } else {
-              totalDespesas += valor;
+              totalDespesas += t.valor;
             }
           }
 
+          final reais = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+
           return Column(
             children: [
-            ResumoFinanceiro(
-            totalReceitas: totalReceitas,
-            totalDespesas: totalDespesas,
-             ),// gráfico de pizza
+              ResumoFinanceiro(
+                totalReceitas: totalReceitas,
+                totalDespesas: totalDespesas,
+              ),
               SizedBox(
                 height: 140,
                 child: PieChart(
@@ -180,34 +97,28 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const Divider(),
-              // lista de transações
               Expanded(
                 child: ListView.builder(
                   itemCount: transacoes.length,
                   itemBuilder: (context, index) {
-                    final doc = transacoes[index];
-                    final tipo = doc['tipo'];
-                    final valor = doc['valor'];
-                    final categoria = doc['categoria'];
-                    final data = (doc['data'] as Timestamp).toDate();
-                    final reais = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-
-
+                    final t = transacoes[index];
                     return ListTile(
                       leading: Icon(
-                        tipo == 'despesa'
+                        t.tipo.toLowerCase() == 'despesa'
                             ? Icons.remove_circle
                             : Icons.add_circle,
-                        color: tipo == 'despesa' ? Colors.red : Colors.green,
+                        color: t.tipo.toLowerCase() == 'despesa'
+                            ? Colors.red
+                            : Colors.green,
                       ),
-                      title: Text(reais.format((doc['valor'] as num).toDouble())),
+                      title: Text(reais.format(t.valor)),
                       subtitle: Text(
-                        "${tipo.toUpperCase()} - ${doc['origem']} - ${doc['categoria']} - ${DateFormat('dd/MM/yy').format(data)}",
+                        "${t.tipo.toUpperCase()} - ${t.origem} - ${t.categoria} - ${DateFormat('dd/MM/yy').format(t.data)}",
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.grey),
                         onPressed: () async {
-                          await FirestoreService().deleteTransacao(doc.id);
+                          await FirestoreService().deleteTransacao(t.id);
                         },
                       ),
                     );

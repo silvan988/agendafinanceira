@@ -6,27 +6,32 @@ class FirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-
-  final CollectionReference transacoesRef =
-  FirebaseFirestore.instance.collection('transacoes');
-
-  // Salvar nova transação
+  // 🔹 Salvar nova transação dentro de usuarios/{uid}/transacoes
   Future<void> adicionarTransacao(Transacao transacao) async {
-    await transacoesRef.doc(transacao.id).set(transacao.toMap());
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _db
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('transacoes')
+        .doc(transacao.id)
+        .set(transacao.toMap());
   }
 
-  // Buscar todas as transações de um usuário
+  // 🔹 Buscar todas as transações de um usuário
   Stream<List<Transacao>> listarTransacoes(String userId) {
-    return transacoesRef
-        .where('id', isEqualTo: userId)
+    return _db
+        .collection('usuarios')
+        .doc(userId)
+        .collection('transacoes')
         .orderBy('data', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Transacao.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-        .toList());
+        .map((snapshot) =>
+        snapshot.docs.map((doc) => Transacao.fromFirestore(doc)).toList());
   }
 
-  // Excluir transação
+  // 🔹 Excluir transação
   Future<void> deleteTransacao(String id) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -37,5 +42,19 @@ class FirestoreService {
         .collection('transacoes')
         .doc(id)
         .delete();
+  }
+
+  // 🔹 Buscar transações filtradas (exemplo: por usuário logado)
+  Stream<List<Transacao>> getTransacoesFiltradas({String? uid}) {
+    final user = _auth.currentUser;
+    if (user == null) return const Stream.empty();
+
+    Query query = _db
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('transacoes');
+
+    return query.snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => Transacao.fromFirestore(doc)).toList());
   }
 }

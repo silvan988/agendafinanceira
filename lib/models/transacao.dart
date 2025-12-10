@@ -1,15 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // 🔹 necessário para Timestamp
 
 class Transacao {
   final String id;
-  final String tipo;       // despesa ou receita
+  final String uid;
+  final String tipo;
   final double valor;
-  final String origem;     // supermercado, uber, salário...
-  final String categoria;  // alimentação, transporte, lazer...
+  final String origem;
+  final String categoria;
   final DateTime data;
 
   Transacao({
     required this.id,
+    required this.uid,
     required this.tipo,
     required this.valor,
     required this.origem,
@@ -17,29 +19,32 @@ class Transacao {
     required this.data,
   });
 
-  // Construtor a partir do Firestore
   factory Transacao.fromFirestore(DocumentSnapshot doc) {
     final dados = doc.data() as Map<String, dynamic>;
 
     return Transacao(
       id: doc.id,
-      tipo: dados['tipo'] ?? '',
-      origem: dados['origem'] ?? '',
-      categoria: dados['categoria'] ?? '',
-      valor: (dados['valor'] as num).toDouble(),
-      data: (dados['data'] as Timestamp).toDate(),
+      uid: dados['uid']?.toString() ?? '',
+      tipo: dados['tipo']?.toString() ?? '',
+      origem: dados['origem']?.toString() ?? '',
+      categoria: dados['categoria']?.toString() ?? '',
+      valor: (dados['valor'] is int || dados['valor'] is double)
+          ? (dados['valor'] as num).toDouble()
+          : double.tryParse(dados['valor'].toString()) ?? 0.0,
+      data: dados['data'] is Timestamp
+          ? (dados['data'] as Timestamp).toDate()
+          : DateTime.tryParse(dados['data'].toString()) ?? DateTime.now(),
     );
   }
 
-
-  // objeto → Firestore
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid,
       'tipo': tipo,
-      'valor': valor,
+      'valor': valor.toDouble(),
       'origem': origem,
       'categoria': categoria,
-      'data': Timestamp.fromDate(data),
+      'data': Timestamp.fromDate(data), // 🔹 sempre salva como Timestamp
     };
   }
 }
